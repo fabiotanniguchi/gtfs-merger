@@ -77,7 +77,11 @@ public class GtfsMerger {
 
     private void mergeStopTimes(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stop times");
+        int n = 0;
+        int total = otherGtfs.getAllStopTimes().size();
         for(StopTime stopTime : otherGtfs.getAllStopTimes()){
+            n++;
+            LOGGER.info("Processing " + n + " of " + total + " stop time");
             for(AgencyAndId tripId : mergedTripIds){
                 if(stopTime.getTrip().getId().compareTo(tripId) == 0){
                     stopTime.setId(stopTime.getId() + 4200000);
@@ -90,7 +94,11 @@ public class GtfsMerger {
 
     private void mergeShapeIds(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging shapes");
+        int n = 0;
+        int total = otherGtfs.getAllShapePoints().size();
         for(ShapePoint shapePoint : otherGtfs.getAllShapePoints()){
+            n++;
+            LOGGER.info("Processing " + n + " of " + total + " stop time");
             for(AgencyAndId shapeId : shapeIds){
                 if(shapePoint.getShapeId().compareTo(shapeId) == 0){
                     shapePoint.setId(shapePoint.getId() + 4200000);
