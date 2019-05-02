@@ -15,13 +15,14 @@ public class GtfsMerger {
     private Set<AgencyAndId> shapeIds = new CopyOnWriteArraySet<>();
     private Set<AgencyAndId> mergedRouteIds = new CopyOnWriteArraySet<>();
     private Set<AgencyAndId> mergedTripIds = new CopyOnWriteArraySet<>();
+    private Set<AgencyAndId> usedStops = new CopyOnWriteArraySet<>();
 
     public GtfsDaoImpl merge(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
-        mergeStops(priorityGtfs, otherGtfs);
         mergeAgencies(priorityGtfs, otherGtfs);
         mergeRoutes(priorityGtfs, otherGtfs);
         mergeTrips(priorityGtfs, otherGtfs);
         mergeStopTimes(priorityGtfs, otherGtfs);
+        mergeStops(priorityGtfs, otherGtfs);
         mergeShapeIds(priorityGtfs, otherGtfs);
         mergeCalendars(priorityGtfs, otherGtfs);
         mergeFrequencies(priorityGtfs, otherGtfs);
@@ -63,7 +64,7 @@ public class GtfsMerger {
 
     private void mergeTrips(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging trips");
-        ExecutorService exec = Executors.newFixedThreadPool(8);
+        ExecutorService exec = Executors.newFixedThreadPool(16);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         for(Trip trip : otherGtfs.getAllTrips()){
             if( ! trip.getRoute().getId().getId().startsWith("OTHER_")) {
@@ -115,7 +116,7 @@ public class GtfsMerger {
 
     private void mergeStopTimes(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stop times");
-        ExecutorService exec = Executors.newFixedThreadPool(8);
+        ExecutorService exec = Executors.newFixedThreadPool(16);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         AtomicInteger n = new AtomicInteger(0);
         int total = otherGtfs.getAllStopTimes().size();
@@ -139,6 +140,7 @@ public class GtfsMerger {
                                 stopTime.getStop().getId().setId("OTHER_" + stopTime.getStop().getId().getId());
                             }
                             priorityGtfs.saveEntity(stopTime);
+                            usedStops.add(stopTime.getStop().getId());
                             break;
                         }
                     }
@@ -276,10 +278,41 @@ public class GtfsMerger {
 
     private void mergeStops(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stops");
+        ExecutorService exec = Executors.newFixedThreadPool(16);
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
+
         for(Stop stop : otherGtfs.getAllStops()){
-            stop.getId().setId("OTHER_" + stop.getId().getId());
-            priorityGtfs.saveEntity(stop);
+            Callable<Void> c = new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    if( ! stop.getId().getId().startsWith("OTHER_")) {
+                        stop.getId().setId("OTHER_" + stop.getId().getId());
+                    }
+                    for(AgencyAndId stopId : usedStops) {
+                        if(stop.getId().compareTo(stopId) == 0){
+                            priorityGtfs.saveEntity(stop);
+                            break;
+                        }
+                    }
+                    return null;
+                }
+            };
+            tasks.add(c);
         }
+
+        LOGGER.debug("Executing tasks");
+        try {
+            exec.invokeAll(tasks);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        exec.shutdown();
+        try{
+            exec.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        LOGGER.debug("Finished tasks");
     }
 
 }
