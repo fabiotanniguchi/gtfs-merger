@@ -81,7 +81,7 @@ public class GtfsMerger {
         int total = otherGtfs.getAllStopTimes().size();
         for(StopTime stopTime : otherGtfs.getAllStopTimes()){
             n++;
-            LOGGER.info("Processing " + n + " of " + total + " stop time");
+            LOGGER.info("Processing " + n + " of " + total + " stop times");
             for(AgencyAndId tripId : mergedTripIds){
                 if(stopTime.getTrip().getId().compareTo(tripId) == 0){
                     stopTime.setId(stopTime.getId() + 4200000);
@@ -98,7 +98,7 @@ public class GtfsMerger {
         int total = otherGtfs.getAllShapePoints().size();
         for(ShapePoint shapePoint : otherGtfs.getAllShapePoints()){
             n++;
-            LOGGER.info("Processing " + n + " of " + total + " stop time");
+            LOGGER.info("Processing " + n + " of " + total + " shape points");
             for(AgencyAndId shapeId : shapeIds){
                 if(shapePoint.getShapeId().compareTo(shapeId) == 0){
                     shapePoint.setId(shapePoint.getId() + 4200000);
