@@ -64,6 +64,6 @@ public class GtfsMerger {
     }
 
     private void mergeStopTimes(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
-        
+
     }
 }
