@@ -3,18 +3,18 @@ import org.onebusaway.gtfs.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GtfsMerger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GtfsMerger.class);
 
-    private Set<AgencyAndId> serviceIds = new HashSet<>();
-    private Set<AgencyAndId> shapeIds = new HashSet<>();
-    private Set<AgencyAndId> mergedRouteIds = new HashSet<>();
-    private Set<AgencyAndId> mergedTripIds = new HashSet<>();
+    private Set<AgencyAndId> serviceIds = new CopyOnWriteArraySet<>();
+    private Set<AgencyAndId> shapeIds = new CopyOnWriteArraySet<>();
+    private Set<AgencyAndId> mergedRouteIds = new CopyOnWriteArraySet<>();
+    private Set<AgencyAndId> mergedTripIds = new CopyOnWriteArraySet<>();
 
     public GtfsDaoImpl merge(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         mergeAgencies(priorityGtfs, otherGtfs);
@@ -59,58 +59,129 @@ public class GtfsMerger {
 
     private void mergeTrips(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging trips");
+        ExecutorService exec = Executors.newFixedThreadPool(8);
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         for(Trip trip : otherGtfs.getAllTrips()){
-            for(AgencyAndId routeId : mergedRouteIds){
-                if(trip.getRoute().getId().compareTo(routeId) == 0){
-                    trip.getId().setId("OTHER_" + trip.getId().getId());
-                    priorityGtfs.saveEntity(trip);
-                    mergedTripIds.add(trip.getId());
-                    serviceIds.add(trip.getServiceId());
-                    if(trip.getShapeId() != null) {
-                        shapeIds.add(trip.getShapeId());
+            Callable<Void> c = new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    for(AgencyAndId routeId : mergedRouteIds){
+                        if(trip.getRoute().getId().compareTo(routeId) == 0){
+                            trip.getId().setId("OTHER_" + trip.getId().getId());
+                            priorityGtfs.saveEntity(trip);
+                            mergedTripIds.add(trip.getId());
+                            serviceIds.add(trip.getServiceId());
+                            if(trip.getShapeId() != null) {
+                                shapeIds.add(trip.getShapeId());
+                            }
+                            break;
+                        }
                     }
-                    break;
+                    return null;
                 }
-            }
+            };
+            tasks.add(c);
         }
+
+        LOGGER.debug("Executing tasks");
+        try {
+            exec.invokeAll(tasks);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        exec.shutdown();
+        try{
+            exec.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        LOGGER.debug("Finished tasks");
     }
 
     private void mergeStopTimes(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stop times");
-        int n = 0;
+        ExecutorService exec = Executors.newFixedThreadPool(8);
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
+        AtomicInteger n = new AtomicInteger(0);
         int total = otherGtfs.getAllStopTimes().size();
+
         for(StopTime stopTime : otherGtfs.getAllStopTimes()){
-            n++;
-            if(n % 100 == 0) {
-                LOGGER.info("Processing " + n + " of " + total + " stop times");
-            }
-            for(AgencyAndId tripId : mergedTripIds){
-                if(stopTime.getTrip().getId().compareTo(tripId) == 0){
-                    stopTime.setId(stopTime.getId() + 4200000);
-                    priorityGtfs.saveEntity(stopTime);
-                    break;
+            Callable<Void> c = new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    int current = n.incrementAndGet();
+                    if(current % 100 == 0) {
+                        LOGGER.info("Processing " + current + " of " + total + " stop times");
+                    }
+                    for(AgencyAndId tripId : mergedTripIds){
+                        if(stopTime.getTrip().getId().compareTo(tripId) == 0){
+                            stopTime.setId(stopTime.getId() + 4200000);
+                            priorityGtfs.saveEntity(stopTime);
+                            break;
+                        }
+                    }
+                    return null;
                 }
-            }
+            };
+            tasks.add(c);
         }
+
+        LOGGER.debug("Executing tasks");
+        try {
+            exec.invokeAll(tasks);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        exec.shutdown();
+        try{
+            exec.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        LOGGER.debug("Finished tasks");
     }
 
     private void mergeShapeIds(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging shapes");
-        int n = 0;
+        ExecutorService exec = Executors.newFixedThreadPool(8);
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
+        AtomicInteger n = new AtomicInteger(0);
         int total = otherGtfs.getAllShapePoints().size();
+
         for(ShapePoint shapePoint : otherGtfs.getAllShapePoints()){
-            n++;
-            if(n % 100 == 0) {
-                LOGGER.info("Processing " + n + " of " + total + " shape points");
-            }
-            for(AgencyAndId shapeId : shapeIds){
-                if(shapePoint.getShapeId().compareTo(shapeId) == 0){
-                    shapePoint.setId(shapePoint.getId() + 4200000);
-                    priorityGtfs.saveEntity(shapePoint);
-                    break;
+            Callable<Void> c = new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    int current = n.incrementAndGet();
+                    if(current % 100 == 0) {
+                        LOGGER.info("Processing " + n + " of " + total + " shape points");
+                    }
+                    for(AgencyAndId shapeId : shapeIds){
+                        if(shapePoint.getShapeId().compareTo(shapeId) == 0){
+                            shapePoint.setId(shapePoint.getId() + 4200000);
+                            priorityGtfs.saveEntity(shapePoint);
+                            break;
+                        }
+                    }
+                    return null;
                 }
-            }
+            };
+            tasks.add(c);
         }
+
+        LOGGER.debug("Executing tasks");
+        try {
+            exec.invokeAll(tasks);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        exec.shutdown();
+        try{
+            exec.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        LOGGER.debug("Finished tasks");
     }
 
     private void mergeCalendars(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
