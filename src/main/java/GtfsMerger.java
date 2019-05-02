@@ -264,7 +264,9 @@ public class GtfsMerger {
             for(AgencyAndId routeId : mergedRouteIds){
                 if(rule.getRoute().getId().compareTo(routeId) == 0){
                     rule.setId(rule.getId() + 4200000);
-                    rule.getRoute().getId().setId("OTHER_" + rule.getRoute().getId().getId());
+                    if( ! rule.getRoute().getId().getId().startsWith("OTHER_")) {
+                        rule.getRoute().getId().setId("OTHER_" + rule.getRoute().getId().getId());
+                    }
                     if( ! rule.getFare().getId().getId().startsWith("OTHER_")){
                         rule.getFare().getId().setId("OTHER_" + rule.getFare().getId().getId());
                     }
