@@ -43,7 +43,9 @@ public class GtfsMerger {
         for(Route route : otherGtfs.getAllRoutes()){
             Route cittatiRoute = findRoute(route, priorityGtfs.getAllRoutes());
             if(cittatiRoute == null){
-                route.getId().setId("OTHER_" + route.getId().getId());
+                if( ! route.getId().getId().startsWith("OTHER_")) {
+                    route.getId().setId("OTHER_" + route.getId().getId());
+                }
                 if(! route.getAgency().getId().startsWith("OTHER_")){
                     route.getAgency().setId("OTHER_" + route.getAgency().getId());
                 }
