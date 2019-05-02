@@ -68,6 +68,9 @@ public class GtfsMerger {
                     for(AgencyAndId routeId : mergedRouteIds){
                         if(trip.getRoute().getId().compareTo(routeId) == 0){
                             trip.getId().setId("OTHER_" + trip.getId().getId());
+                            if( ! trip.getShapeId().getId().startsWith("OTHER_")){
+                                trip.getShapeId().setId("OTHER_" + trip.getShapeId().getId());
+                            }
                             priorityGtfs.saveEntity(trip);
                             mergedTripIds.add(trip.getId());
                             serviceIds.add(trip.getServiceId());
