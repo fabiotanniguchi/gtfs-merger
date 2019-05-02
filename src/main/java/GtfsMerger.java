@@ -64,7 +64,7 @@ public class GtfsMerger {
 
     private void mergeTrips(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging trips");
-        ExecutorService exec = Executors.newFixedThreadPool(16);
+        ExecutorService exec = Executors.newFixedThreadPool(8);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         for(Trip trip : otherGtfs.getAllTrips()){
             if( ! trip.getRoute().getId().getId().startsWith("OTHER_")) {
@@ -116,7 +116,7 @@ public class GtfsMerger {
 
     private void mergeStopTimes(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stop times");
-        ExecutorService exec = Executors.newFixedThreadPool(16);
+        ExecutorService exec = Executors.newFixedThreadPool(8);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         AtomicInteger n = new AtomicInteger(0);
         int total = otherGtfs.getAllStopTimes().size();
@@ -278,7 +278,7 @@ public class GtfsMerger {
 
     private void mergeStops(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging stops");
-        ExecutorService exec = Executors.newFixedThreadPool(16);
+        ExecutorService exec = Executors.newFixedThreadPool(8);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
 
         for(Stop stop : otherGtfs.getAllStops()){
