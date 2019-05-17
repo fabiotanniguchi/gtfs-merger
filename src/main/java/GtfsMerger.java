@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GtfsMerger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GtfsMerger.class);
+    private static final String PREFIX = "OTHER_";
 
     private Set<AgencyAndId> serviceIds = new CopyOnWriteArraySet<>();
     private Set<AgencyAndId> shapeIds = new CopyOnWriteArraySet<>();
@@ -33,7 +34,7 @@ public class GtfsMerger {
     private void mergeAgencies(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging agencies");
         for(Agency agency : otherGtfs.getAllAgencies()){
-            agency.setId("OTHER_" + agency.getId());
+            agency.setId(PREFIX + agency.getId());
             priorityGtfs.saveEntity(agency);
         }
     }
@@ -43,11 +44,11 @@ public class GtfsMerger {
         for(Route route : otherGtfs.getAllRoutes()){
             Route cittatiRoute = findRoute(route, priorityGtfs.getAllRoutes());
             if(cittatiRoute == null){
-                if( ! route.getId().getId().startsWith("OTHER_")) {
-                    route.getId().setId("OTHER_" + route.getId().getId());
+                if( ! route.getId().getId().startsWith(PREFIX)) {
+                    route.getId().setId(PREFIX + route.getId().getId());
                 }
-                if(! route.getAgency().getId().startsWith("OTHER_")){
-                    route.getAgency().setId("OTHER_" + route.getAgency().getId());
+                if(! route.getAgency().getId().startsWith(PREFIX)){
+                    route.getAgency().setId(PREFIX + route.getAgency().getId());
                 }
                 priorityGtfs.saveEntity(route);
                 mergedRouteIds.add(route.getId());
@@ -69,8 +70,8 @@ public class GtfsMerger {
         ExecutorService exec = Executors.newFixedThreadPool(8);
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         for(Trip trip : otherGtfs.getAllTrips()){
-            if( ! trip.getRoute().getId().getId().startsWith("OTHER_")) {
-                trip.getRoute().getId().setId("OTHER_" + trip.getRoute().getId().getId());
+            if( ! trip.getRoute().getId().getId().startsWith(PREFIX)) {
+                trip.getRoute().getId().setId(PREFIX + trip.getRoute().getId().getId());
             }
 
 
@@ -79,12 +80,12 @@ public class GtfsMerger {
                 public Void call() throws Exception {
                     for(AgencyAndId routeId : mergedRouteIds){
                         if(trip.getRoute().getId().compareTo(routeId) == 0){
-                            trip.getId().setId("OTHER_" + trip.getId().getId());
-                            if(trip.getShapeId() != null && !trip.getShapeId().getId().startsWith("OTHER_")){
-                                trip.getShapeId().setId("OTHER_" + trip.getShapeId().getId());
+                            trip.getId().setId(PREFIX + trip.getId().getId());
+                            if(trip.getShapeId() != null && !trip.getShapeId().getId().startsWith(PREFIX)){
+                                trip.getShapeId().setId(PREFIX + trip.getShapeId().getId());
                             }
-                            if( ! trip.getServiceId().getId().startsWith("OTHER_")) {
-                                trip.getServiceId().setId("OTHER_" + trip.getServiceId().getId());
+                            if( ! trip.getServiceId().getId().startsWith(PREFIX)) {
+                                trip.getServiceId().setId(PREFIX + trip.getServiceId().getId());
                             }
                             priorityGtfs.saveEntity(trip);
                             mergedTripIds.add(trip.getId());
@@ -124,8 +125,8 @@ public class GtfsMerger {
         int total = otherGtfs.getAllStopTimes().size();
 
         for(StopTime stopTime : otherGtfs.getAllStopTimes()){
-            if( ! stopTime.getTrip().getId().getId().startsWith("OTHER_")){
-                stopTime.getTrip().getId().setId("OTHER_" + stopTime.getTrip().getId().getId());
+            if( ! stopTime.getTrip().getId().getId().startsWith(PREFIX)){
+                stopTime.getTrip().getId().setId(PREFIX + stopTime.getTrip().getId().getId());
             }
 
             Callable<Void> c = new Callable<Void>() {
@@ -138,8 +139,8 @@ public class GtfsMerger {
                     for(AgencyAndId tripId : mergedTripIds){
                         if(stopTime.getTrip().getId().compareTo(tripId) == 0){
                             stopTime.setId(stopTime.getId() + 4200000);
-                            if( ! stopTime.getStop().getId().getId().startsWith("OTHER_")){
-                                stopTime.getStop().getId().setId("OTHER_" + stopTime.getStop().getId().getId());
+                            if( ! stopTime.getStop().getId().getId().startsWith(PREFIX)){
+                                stopTime.getStop().getId().setId(PREFIX + stopTime.getStop().getId().getId());
                             }
                             priorityGtfs.saveEntity(stopTime);
                             usedStops.add(stopTime.getStop().getId());
@@ -175,8 +176,8 @@ public class GtfsMerger {
         int total = otherGtfs.getAllShapePoints().size();
 
         for(ShapePoint shapePoint : otherGtfs.getAllShapePoints()){
-            if( ! shapePoint.getShapeId().getId().startsWith("OTHER_")) {
-                shapePoint.getShapeId().setId("OTHER_" + shapePoint.getShapeId().getId());
+            if( ! shapePoint.getShapeId().getId().startsWith(PREFIX)) {
+                shapePoint.getShapeId().setId(PREFIX + shapePoint.getShapeId().getId());
             }
 
             Callable<Void> c = new Callable<Void>() {
@@ -217,8 +218,8 @@ public class GtfsMerger {
     private void mergeCalendars(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging calendars");
         for(ServiceCalendar calendar : otherGtfs.getAllCalendars()){
-            if( ! calendar.getServiceId().getId().startsWith("OTHER_")) {
-                calendar.getServiceId().setId("OTHER_" + calendar.getServiceId().getId());
+            if( ! calendar.getServiceId().getId().startsWith(PREFIX)) {
+                calendar.getServiceId().setId(PREFIX + calendar.getServiceId().getId());
             }
             for(AgencyAndId serviceId : serviceIds){
                 if(calendar.getServiceId().compareTo(serviceId) == 0){
@@ -231,8 +232,8 @@ public class GtfsMerger {
 
         LOGGER.info("Merging calendar dates");
         for(ServiceCalendarDate calendarDate : otherGtfs.getAllCalendarDates()){
-            if( ! calendarDate.getServiceId().getId().startsWith("OTHER_")) {
-                calendarDate.getServiceId().setId("OTHER_" + calendarDate.getServiceId().getId());
+            if( ! calendarDate.getServiceId().getId().startsWith(PREFIX)) {
+                calendarDate.getServiceId().setId(PREFIX + calendarDate.getServiceId().getId());
             }
             for(AgencyAndId serviceId : serviceIds){
                 if(calendarDate.getServiceId().compareTo(serviceId) == 0){
@@ -247,8 +248,8 @@ public class GtfsMerger {
     private void mergeFrequencies(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging frequencies");
         for(Frequency frequency : otherGtfs.getAllFrequencies()){
-            if( ! frequency.getTrip().getId().getId().startsWith("OTHER_")){
-                frequency.getTrip().getId().setId("OTHER_" + frequency.getTrip().getId().getId());
+            if( ! frequency.getTrip().getId().getId().startsWith(PREFIX)){
+                frequency.getTrip().getId().setId(PREFIX + frequency.getTrip().getId().getId());
             }
             for(AgencyAndId tripId : mergedTripIds){
                 if(frequency.getTrip().getId().compareTo(tripId) == 0){
@@ -266,11 +267,11 @@ public class GtfsMerger {
             for(AgencyAndId routeId : mergedRouteIds){
                 if(rule.getRoute().getId().compareTo(routeId) == 0){
                     rule.setId(rule.getId() + 4200000);
-                    if( ! rule.getRoute().getId().getId().startsWith("OTHER_")) {
-                        rule.getRoute().getId().setId("OTHER_" + rule.getRoute().getId().getId());
+                    if( ! rule.getRoute().getId().getId().startsWith(PREFIX)) {
+                        rule.getRoute().getId().setId(PREFIX + rule.getRoute().getId().getId());
                     }
-                    if( ! rule.getFare().getId().getId().startsWith("OTHER_")){
-                        rule.getFare().getId().setId("OTHER_" + rule.getFare().getId().getId());
+                    if( ! rule.getFare().getId().getId().startsWith(PREFIX)){
+                        rule.getFare().getId().setId(PREFIX + rule.getFare().getId().getId());
                     }
                     priorityGtfs.saveEntity(rule.getFare());
                     priorityGtfs.saveEntity(rule);
@@ -289,8 +290,8 @@ public class GtfsMerger {
             Callable<Void> c = new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    if( ! stop.getId().getId().startsWith("OTHER_")) {
-                        stop.getId().setId("OTHER_" + stop.getId().getId());
+                    if( ! stop.getId().getId().startsWith(PREFIX)) {
+                        stop.getId().setId(PREFIX + stop.getId().getId());
                     }
                     for(AgencyAndId stopId : usedStops) {
                         if(stop.getId().compareTo(stopId) == 0){
