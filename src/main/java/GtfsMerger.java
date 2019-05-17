@@ -11,6 +11,7 @@ public class GtfsMerger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GtfsMerger.class);
     private static final String PREFIX = "OTHER_";
+    private static final String TIMEZONE = "America/Recife";
 
     private Set<AgencyAndId> serviceIds = new CopyOnWriteArraySet<>();
     private Set<AgencyAndId> shapeIds = new CopyOnWriteArraySet<>();
@@ -35,6 +36,7 @@ public class GtfsMerger {
         LOGGER.info("Merging agencies");
         for(Agency agency : otherGtfs.getAllAgencies()){
             agency.setId(PREFIX + agency.getId());
+            agency.setTimezone(TIMEZONE);
             priorityGtfs.saveEntity(agency);
         }
     }
