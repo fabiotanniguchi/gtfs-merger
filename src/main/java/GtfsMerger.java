@@ -34,6 +34,11 @@ public class GtfsMerger {
 
     private void mergeAgencies(GtfsDaoImpl priorityGtfs, GtfsDaoImpl otherGtfs){
         LOGGER.info("Merging agencies");
+        for(Agency agency : priorityGtfs.getAllAgencies()){
+            agency.setId(PREFIX + agency.getId());
+            agency.setTimezone(TIMEZONE);
+            priorityGtfs.saveOrUpdateEntity(agency);
+        }
         for(Agency agency : otherGtfs.getAllAgencies()){
             agency.setId(PREFIX + agency.getId());
             agency.setTimezone(TIMEZONE);
