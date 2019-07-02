@@ -25,6 +25,9 @@ public class GtfsMergerApplication {
         reader2.setEntityStore(otherGtfsStore);
         reader2.run();
 
+        reader1.close();
+        reader2.close();
+
         GtfsMerger merger = new GtfsMerger();
         GtfsDaoImpl merged = merger.merge(priorityGtfsStore, otherGtfsStore);
 
