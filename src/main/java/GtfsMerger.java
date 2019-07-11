@@ -29,6 +29,10 @@ public class GtfsMerger {
         mergeCalendars(priorityGtfs, otherGtfs);
         mergeFrequencies(priorityGtfs, otherGtfs);
         mergeFares(priorityGtfs, otherGtfs);
+
+        renameDuplicateStops(priorityGtfs);
+        removeDuplicateStopTimes(priorityGtfs);
+
         return priorityGtfs;
     }
 
@@ -329,6 +333,68 @@ public class GtfsMerger {
             ex.printStackTrace();
         }
         LOGGER.debug("Finished tasks");
+    }
+
+
+    public void renameDuplicateStops(GtfsDaoImpl gtfs){
+        LOGGER.info("Removing duplicate stops...");
+
+        List<Stop> stops = new LinkedList<>(gtfs.getAllStops());
+        stops.sort(new Comparator<Stop>() {
+            @Override
+            public int compare(Stop o1, Stop o2) {
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+
+        Stop lastDistinctStop = null;
+        int i = 0;
+        for (Stop stop : stops) {
+            try {
+                if (lastDistinctStop == null || !lastDistinctStop.getName().equals(stop.getName())) {
+                    lastDistinctStop = stop;
+                    i = 0;
+                } else {
+                    i++;
+                    stop.setName(stop.getName() + " - " + i);
+                    gtfs.updateEntity(stop);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void removeDuplicateStopTimes(GtfsDaoImpl gtfs){
+        LOGGER.info("Removing duplicate stop times...");
+
+        boolean hasDuplicateStops = true;
+
+        while(hasDuplicateStops) {
+            hasDuplicateStops = false;
+
+            List<StopTime> stopTimes = new LinkedList<>(gtfs.getAllStopTimes());
+
+            Trip lastDistinctTrip = null;
+            Stop lastDistinctStop = null;
+            for (StopTime stopTime : stopTimes) {
+                try {
+                    if (lastDistinctTrip == null || !lastDistinctTrip.equals(stopTime.getTrip())) {
+                        lastDistinctTrip = stopTime.getTrip();
+                        lastDistinctStop = stopTime.getStop();
+                    } else {
+                        if (lastDistinctStop == null || !lastDistinctStop.getName().equals(stopTime.getStop().getName())) {
+                            lastDistinctStop = stopTime.getStop();
+                        } else {
+                            gtfs.removeEntity(stopTime);
+                            hasDuplicateStops = true;
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 }
