@@ -386,7 +386,7 @@ public class GtfsMerger {
         while(hasDuplicateStops) {
             hasDuplicateStops = false;
 
-            List<StopTime> stopTimes = new LinkedList<>(gtfs.getAllStopTimes());
+            Collection<StopTime> stopTimes = gtfs.getAllStopTimes();
 
             Trip lastDistinctTrip = null;
             Stop lastDistinctStop = null;
