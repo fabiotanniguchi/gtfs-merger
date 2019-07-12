@@ -355,9 +355,22 @@ public class GtfsMerger {
                     lastDistinctStop = stop;
                     i = 0;
                 } else {
-                    i++;
-                    stop.setName(stop.getName() + " - " + i);
-                    gtfs.updateEntity(stop);
+                    if(Double.compare(lastDistinctStop.getLat(), stop.getLat()) == 0
+                        && Double.compare(lastDistinctStop.getLocationType(), stop.getLon()) == 0){
+
+                        Collection<StopTime> stopTimes = gtfs.getAllStopTimes();
+                        for (StopTime stopTime : stopTimes) {
+                            if (stopTime.getStop().getId().equals(stop.getId())) {
+                                stopTime.setStop(lastDistinctStop);
+                                gtfs.updateEntity(stopTime);
+                            }
+                        }
+                        gtfs.removeEntity(stop);
+                    }else{
+                        i++;
+                        stop.setName(stop.getName() + " - " + i);
+                        gtfs.updateEntity(stop);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
